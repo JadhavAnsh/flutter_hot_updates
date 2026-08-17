@@ -10,6 +10,12 @@ environment:
 
 resolution: workspace
 
+dependencies:
+  args: ^2.6.0
+  asn1lib: ^1.6.5
+  crypto: ^3.0.0
+  pointycastle: ^4.0.0
+
 executables:
   hot_updates:
 

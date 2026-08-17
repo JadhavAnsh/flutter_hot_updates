@@ -78,8 +78,8 @@ final class HotUpdates {
       _downloader = Downloader(dio: dio);
       _remoteConfig = RemoteConfig();
 
-      final storageRoot = storageRootOverride ??
-          await getApplicationSupportDirectory();
+      final storageRoot =
+          storageRootOverride ?? await getApplicationSupportDirectory();
       _storage = await StorageManager.create(storageRoot);
       await _storage.initialize();
 
@@ -104,10 +104,7 @@ final class HotUpdates {
         );
       }
 
-      _assetResolver = AssetResolver(
-        storage: _storage,
-        state: _storage.state,
-      );
+      _assetResolver = AssetResolver(storage: _storage, state: _storage.state);
       _remoteConfig.applyManifest(_storage.activeManifest);
       _initialized = true;
     });
@@ -162,10 +159,11 @@ final class HotUpdates {
         patch,
         tempPath: stagingDirectory.path,
       );
-      _emit(UpdateEvent.downloading(DownloadProgress(
-        receivedBytes: 0,
-        totalBytes: manifest.bundle.size,
-      )));
+      _emit(
+        UpdateEvent.downloading(
+          DownloadProgress(receivedBytes: 0, totalBytes: manifest.bundle.size),
+        ),
+      );
 
       final bundleUrl = _updateClient.resolveUrl(
         release.manifestUrl,
@@ -202,8 +200,9 @@ final class HotUpdates {
         InstallJournalStage.installing,
       );
 
-      final installedManifest =
-          await _storage.readManifestFromDirectory(stagingDirectory);
+      final installedManifest = await _storage.readManifestFromDirectory(
+        stagingDirectory,
+      );
       _updateChecker.validateManifest(
         manifest: installedManifest,
         appInfo: _appInfo,
@@ -264,6 +263,22 @@ final class HotUpdates {
       throw const UpdateOperationException('no installed patch to activate');
     }
 
+    await _setActivePatch(targetPatch);
+  }
+
+  /// Rolls back to the previously active patch, if one exists.
+  static Future<void> rollback() async {
+    _ensureInitialized();
+
+    final targetPatch = _storage.state?.previousPatch;
+    if (targetPatch == null) {
+      throw const UpdateOperationException('no previous patch available');
+    }
+
+    await _setActivePatch(targetPatch);
+  }
+
+  static Future<void> _setActivePatch(int targetPatch) async {
     final record = _storage.state?.recordForPatch(targetPatch);
     if (record == null) {
       throw UpdateOperationException('patch $targetPatch is not installed');

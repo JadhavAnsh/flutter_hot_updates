@@ -9,12 +9,7 @@ import '../models/update_manifest.dart';
 import '../models/update_state.dart';
 import '../security/checksum_verifier.dart';
 
-enum InstallJournalStage {
-  downloading,
-  extracting,
-  installing,
-  complete,
-}
+enum InstallJournalStage { downloading, extracting, installing, complete }
 
 class InstallJournalEntry {
   const InstallJournalEntry({
@@ -41,10 +36,7 @@ class InstallJournalEntry {
   final String startedAt;
   final String? tempPath;
 
-  InstallJournalEntry copyWith({
-    InstallJournalStage? stage,
-    String? tempPath,
-  }) {
+  InstallJournalEntry copyWith({InstallJournalStage? stage, String? tempPath}) {
     return InstallJournalEntry(
       patch: patch,
       stage: stage ?? this.stage,
@@ -54,11 +46,11 @@ class InstallJournalEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'patch': patch,
-        'stage': stage.name,
-        'startedAt': startedAt,
-        if (tempPath != null) 'tempPath': tempPath,
-      };
+    'patch': patch,
+    'stage': stage.name,
+    'startedAt': startedAt,
+    if (tempPath != null) 'tempPath': tempPath,
+  };
 }
 
 /// Tracks in-progress installs for recovery and bookkeeping.
@@ -68,8 +60,7 @@ class InstallJournal {
   final File _file;
   List<InstallJournalEntry> _entries = [];
 
-  List<InstallJournalEntry> get entries =>
-      List.unmodifiable(_entries);
+  List<InstallJournalEntry> get entries => List.unmodifiable(_entries);
 
   Future<void> load() async {
     if (!await _file.exists()) {
@@ -148,9 +139,9 @@ class StorageManager {
     required File stateFile,
     required File activeManifestFile,
     required File installJournalFile,
-  })  : _stateFile = stateFile,
-        _activeManifestFile = activeManifestFile,
-        _installJournal = InstallJournal(installJournalFile);
+  }) : _stateFile = stateFile,
+       _activeManifestFile = activeManifestFile,
+       _installJournal = InstallJournal(installJournalFile);
 
   final Directory rootDirectory;
   final File _stateFile;
@@ -164,8 +155,10 @@ class StorageManager {
   UpdateManifest? get activeManifest => _activeManifest;
   InstallJournal get installJournal => _installJournal;
 
-  Directory get manifestsDir => Directory(p.join(rootDirectory.path, 'manifests'));
-  Directory get downloadsDir => Directory(p.join(rootDirectory.path, 'downloads'));
+  Directory get manifestsDir =>
+      Directory(p.join(rootDirectory.path, 'manifests'));
+  Directory get downloadsDir =>
+      Directory(p.join(rootDirectory.path, 'downloads'));
   Directory get patchesDir => Directory(p.join(rootDirectory.path, 'patches'));
   Directory get stagingDir => Directory(p.join(rootDirectory.path, 'staging'));
 
@@ -176,8 +169,12 @@ class StorageManager {
     return StorageManager(
       rootDirectory: hotUpdatesRoot,
       stateFile: File(p.join(hotUpdatesRoot.path, 'state.json')),
-      activeManifestFile: File(p.join(hotUpdatesRoot.path, 'manifests', 'active.json')),
-      installJournalFile: File(p.join(hotUpdatesRoot.path, 'install_journal.json')),
+      activeManifestFile: File(
+        p.join(hotUpdatesRoot.path, 'manifests', 'active.json'),
+      ),
+      installJournalFile: File(
+        p.join(hotUpdatesRoot.path, 'install_journal.json'),
+      ),
     );
   }
 
@@ -225,9 +222,7 @@ class StorageManager {
     }
 
     final content = await _stateFile.readAsString();
-    _state = UpdateState.fromJson(
-      jsonDecode(content) as Map<String, dynamic>,
-    );
+    _state = UpdateState.fromJson(jsonDecode(content) as Map<String, dynamic>);
   }
 
   Future<void> _loadActiveManifest() async {
@@ -277,14 +272,18 @@ class StorageManager {
         continue;
       }
 
-      final relativePath = p.normalize(file.name);
-      if (relativePath.startsWith('..') ||
-          relativePath.contains('..${p.separator}')) {
+      final entryPath = p.normalize(file.name);
+      if (p.isAbsolute(entryPath)) {
         throw const UpdateOperationException('zip path traversal detected');
       }
 
-      final outputPath = p.normalize(p.join(destinationPath, relativePath));
-      if (!outputPath.startsWith(destinationPath)) {
+      if (entryPath.startsWith('..') ||
+          entryPath.contains('..${p.separator}')) {
+        throw const UpdateOperationException('zip path traversal detected');
+      }
+
+      final outputPath = p.normalize(p.join(destinationPath, entryPath));
+      if (!p.isWithin(destinationPath, outputPath)) {
         throw const UpdateOperationException('zip path traversal detected');
       }
 
@@ -297,16 +296,23 @@ class StorageManager {
   Future<UpdateManifest> readManifestFromDirectory(Directory directory) async {
     final manifestFile = File(p.join(directory.path, 'manifest.json'));
     if (!await manifestFile.exists()) {
-      throw const UpdateOperationException('installed patch missing manifest.json');
+      throw const UpdateOperationException(
+        'installed patch missing manifest.json',
+      );
     }
     return UpdateManifest.parse(await manifestFile.readAsString());
   }
 
-  Future<void> verifyInstalledAssets(UpdateManifest manifest, Directory patchDir) async {
+  Future<void> verifyInstalledAssets(
+    UpdateManifest manifest,
+    Directory patchDir,
+  ) async {
     for (final asset in manifest.assets) {
       final assetFile = File(p.join(patchDir.path, 'assets', asset.path));
       if (!await assetFile.exists()) {
-        throw UpdateOperationException('missing installed asset: ${asset.path}');
+        throw UpdateOperationException(
+          'missing installed asset: ${asset.path}',
+        );
       }
 
       final bytes = await assetFile.readAsBytes();

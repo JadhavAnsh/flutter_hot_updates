@@ -2,7 +2,7 @@
 
 `flutter_hot_updates` is an open-source, self-hostable update layer for Flutter apps. The project is designed to let teams ship dynamic assets, remote configuration, and server-driven UI changes without requiring an APK reinstall.
 
-This repository is currently in the repository foundation stage. The codebase is being organized as a monorepo before the first MVP features are implemented.
+The repository currently includes the Flutter client package, security verification primitives, and a CLI package with key-generation and manifest-signing support.
 
 ## Current Status
 
@@ -10,12 +10,16 @@ Pre-MVP. Not ready for production use and not published to pub.dev.
 
 | Capability | Status |
 | --- | --- |
-| Check update manifest | Planned for v0.1 |
-| Download updated assets | Planned for v0.1 |
-| Remote configuration | Planned for v0.1 |
-| Dynamic asset widgets | Planned for v0.1 |
-| Patch signing | Planned for v0.2 |
-| Rollback | Planned for v0.2 |
+| Check update manifest | Implemented in `flutter_hot_updates` |
+| Download updated assets | Implemented in `flutter_hot_updates` |
+| Remote configuration | Implemented in `flutter_hot_updates` |
+| Dynamic asset widgets | Implemented in `flutter_hot_updates` |
+| SHA256 checksum verification | Implemented in `flutter_hot_updates` |
+| Manifest signature verification | Implemented in `flutter_hot_updates` |
+| Safe archive extraction | Implemented in `flutter_hot_updates` |
+| Rollback to previous patch | Implemented in `flutter_hot_updates` |
+| CLI key generation | Implemented in `flutter_hot_updates_cli` |
+| CLI manifest signing | Implemented in `flutter_hot_updates_cli` |
 | CLI release and patch commands | Planned for v0.3 |
 | Self-hosted backend | Planned for v0.3 |
 | Admin dashboard | Planned for v0.5 |
@@ -51,6 +55,17 @@ dart pub global run melos analyze
 dart pub global run melos test
 ```
 
+Useful package-level checks:
+
+```bash
+cd packages/flutter_hot_updates
+flutter test
+
+cd ../flutter_hot_updates_cli
+dart analyze
+dart run bin/hot_updates.dart --help
+```
+
 The current Flutter scaffold has been preserved as `examples/basic_flutter_app`.
 
 ## Roadmap
@@ -65,6 +80,6 @@ The current Flutter scaffold has been preserved as `examples/basic_flutter_app`.
 
 ## Security Notice
 
-Pre-1.0 versions should be treated as experimental. Do not use this project to distribute production updates until signature verification, rollback, and operational safeguards are complete.
+Pre-1.0 versions should be treated as experimental. The client package now verifies checksums and signatures, but the end-to-end release workflow is still incomplete because backend upload, rollout management, and production hardening are not implemented yet.
 
 `flutter_hot_updates` v0.x will update dynamic assets, configuration, and server-driven UI definitions. It will not patch compiled Dart code, native plugins, Android resources bundled in the APK, iOS binaries, or Flutter engine artifacts.

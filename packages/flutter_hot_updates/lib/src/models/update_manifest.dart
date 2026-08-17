@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../errors.dart';
+import '../security/canonical_json.dart';
 
 /// Metadata for a downloadable patch bundle.
 class BundleInfo {
@@ -36,11 +37,7 @@ class BundleInfo {
   final String sha256;
   final int size;
 
-  Map<String, dynamic> toJson() => {
-        'url': url,
-        'sha256': sha256,
-        'size': size,
-      };
+  Map<String, dynamic> toJson() => {'url': url, 'sha256': sha256, 'size': size};
 }
 
 /// A single asset entry referenced by a manifest.
@@ -66,22 +63,14 @@ class UpdateAsset {
       throw const UpdateValidationException('asset.sha256 is required');
     }
 
-    return UpdateAsset(
-      path: path,
-      url: url,
-      sha256: sha256.toLowerCase(),
-    );
+    return UpdateAsset(path: path, url: url, sha256: sha256.toLowerCase());
   }
 
   final String path;
   final String url;
   final String sha256;
 
-  Map<String, dynamic> toJson() => {
-        'path': path,
-        'url': url,
-        'sha256': sha256,
-      };
+  Map<String, dynamic> toJson() => {'path': path, 'url': url, 'sha256': sha256};
 }
 
 /// Parsed update manifest (schema v1).
@@ -127,8 +116,7 @@ class UpdateManifest {
     if (patch is! num || patch < 0) {
       throw const UpdateValidationException('patch must be a non-negative int');
     }
-    if (minSupportedAppVersion is! String ||
-        minSupportedAppVersion.isEmpty) {
+    if (minSupportedAppVersion is! String || minSupportedAppVersion.isEmpty) {
       throw const UpdateValidationException(
         'minSupportedAppVersion is required',
       );
@@ -189,22 +177,25 @@ class UpdateManifest {
   final String? signature;
 
   Map<String, dynamic> toJson({bool includeSignature = true}) => {
-        'schemaVersion': schemaVersion,
-        'projectId': projectId,
-        'appVersion': appVersion,
-        'patch': patch,
-        'minSupportedAppVersion': minSupportedAppVersion,
-        'platform': platform,
-        'createdAt': createdAt,
-        'assets': assets.map((asset) => asset.toJson()).toList(),
-        'config': config,
-        'bundle': bundle.toJson(),
-        if (includeSignature && signature != null) 'signature': signature,
-      };
+    'schemaVersion': schemaVersion,
+    'projectId': projectId,
+    'appVersion': appVersion,
+    'patch': patch,
+    'minSupportedAppVersion': minSupportedAppVersion,
+    'platform': platform,
+    'createdAt': createdAt,
+    'assets': assets.map((asset) => asset.toJson()).toList(),
+    'config': config,
+    'bundle': bundle.toJson(),
+    if (includeSignature && signature != null) 'signature': signature,
+  };
 
   String toJsonString({bool includeSignature = true}) =>
       jsonEncode(toJson(includeSignature: includeSignature));
 
   /// Canonical JSON payload used for signature verification (no signature field).
   Map<String, dynamic> canonicalPayload() => toJson(includeSignature: false);
+
+  /// Canonical JSON string used for signing and verification.
+  String canonicalJsonString() => canonicalJsonEncode(canonicalPayload());
 }

@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
+import 'canonical_json.dart';
+
 /// SHA256 checksum helpers.
 class ChecksumVerifier {
   const ChecksumVerifier._();
@@ -22,33 +24,7 @@ class ChecksumVerifier {
     Map<String, dynamic> payload,
     String expectedHex,
   ) {
-    final canonical = jsonEncode(_sortMap(payload));
+    final canonical = canonicalJsonEncode(payload);
     return verifyHex(utf8.encode(canonical), expectedHex);
-  }
-
-  static Map<String, dynamic> _sortMap(Map<String, dynamic> input) {
-    final sortedKeys = input.keys.toList()..sort();
-    final result = <String, dynamic>{};
-    for (final key in sortedKeys) {
-      final value = input[key];
-      if (value is Map<String, dynamic>) {
-        result[key] = _sortMap(value);
-      } else if (value is Map) {
-        result[key] = _sortMap(Map<String, dynamic>.from(value));
-      } else if (value is List) {
-        result[key] = value
-            .map(
-              (item) => item is Map<String, dynamic>
-                  ? _sortMap(item)
-                  : item is Map
-                      ? _sortMap(Map<String, dynamic>.from(item))
-                      : item,
-            )
-            .toList();
-      } else {
-        result[key] = value;
-      }
-    }
-    return result;
   }
 }
