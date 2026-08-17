@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "projectId": "basic_example",
+  "appVersion": "1.0.1",
+  "patch": 1,
+  "minSupportedAppVersion": "1.0.1",
+  "platform": "__PLATFORM__",
+  "createdAt": "2026-08-17T00:00:00.000Z",
+  "assets": [
+    {
+      "path": "images/banner.png",
+      "url": "images/banner.png",
+      "sha256": "b1ff9c8ea3a780bad09b346c423d2d0e46815926879b18e841d928376a946640"
+    },
+    {
+      "path": "copy/home_headline.txt",
+      "url": "copy/home_headline.txt",
+      "sha256": "8200713fe2512481c7a0f484b7750914e3228ba3ddc172faed36ebc4c07cf479"
+    }
+  ],
+  "config": { "showReferral": true, "theme": "festival" },
+  "bundle": {
+    "url": "patch_2.zip",
+    "sha256": "81a78a4517d2b2f966640c4e114c12834dd922362cd9d3d8d4b092e1ef751a04",
+    "size": 1659
+  }
+}

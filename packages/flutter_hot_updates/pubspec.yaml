@@ -1,6 +1,6 @@
 name: flutter_hot_updates
 description: Self-hostable dynamic asset, configuration, and server-driven UI updates for Flutter apps.
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/flutter-hot-updates/flutter_hot_updates
 repository: https://github.com/flutter-hot-updates/flutter_hot_updates
 issue_tracker: https://github.com/flutter-hot-updates/flutter_hot_updates/issues
@@ -14,10 +14,20 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  archive: ^4.0.0
+  crypto: ^3.0.0
+  dio: ^5.0.0
+  package_info_plus: ^8.0.0
+  path: ^1.9.0
+  path_provider: ^2.1.0
+  pointycastle: ^4.0.0
+  asn1lib: ^1.6.5
+  synchronized: ^3.0.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+  shelf: ^1.4.0
 
 flutter:
