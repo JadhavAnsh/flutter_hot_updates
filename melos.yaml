@@ -1,0 +1,13 @@
+name: flutter_hot_updates_workspace
+
+packages:
+  - packages/**
+  - examples/**
+
+scripts:
+  analyze:
+    run: dart run melos exec -- "flutter analyze ."
+  test:
+    run: dart run melos exec --dir-exists=test -- "flutter test"
+  format:
+    run: dart run melos exec -- "dart format ."

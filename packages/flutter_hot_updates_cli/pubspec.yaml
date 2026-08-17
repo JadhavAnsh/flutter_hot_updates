@@ -1,0 +1,18 @@
+name: flutter_hot_updates_cli
+description: Command-line tooling for flutter_hot_updates releases and patches.
+version: 0.0.1
+homepage: https://github.com/flutter-hot-updates/flutter_hot_updates
+repository: https://github.com/flutter-hot-updates/flutter_hot_updates
+issue_tracker: https://github.com/flutter-hot-updates/flutter_hot_updates/issues
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+executables:
+  hot_updates:
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
