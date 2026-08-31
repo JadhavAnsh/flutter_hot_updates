@@ -1185,3 +1185,114 @@ is planned as a later research track.
 ```
 
 This avoids overpromising while still making the project useful and credible.
+
+## 23. Current Implementation Status (as of 2026-08-31)
+
+### Phase Assessment
+
+**Current phase:** Early Phase 2 (CLI + Security)
+
+**What exists:**
+- ✅ Flutter package core (`packages/flutter_hot_updates/`)
+- ✅ Manifest model and verification
+- ✅ RSA signing/verification infrastructure
+- ✅ Rollback functionality in client
+- ✅ CLI security commands (keys, sign)
+- ⚠️  CLI expanded to 2,200+ lines across 20+ files
+- ⚠️  Backend client stub (88 lines, no backend exists)
+- ⚠️  Release workflow (225 lines, unused)
+- ⚠️  Auth/token store (no auth server)
+
+**What's missing from plan:**
+- Backend API (Phase 3)
+- Dashboard (Phase 5)
+- Documented self-hosting guide
+- End-to-end test with real manifest server
+
+### Drift Analysis
+
+The CLI implementation deviated from the plan's lean approach:
+
+**Plan expectation (Phase 2):**
+```text
+lib/src/
+├── commands/          # 6-8 command files
+├── config/           # Config parser
+├── manifest/         # Builder + signer
+├── assets/           # Collector + diff
+├── upload/           # Client + static export
+└── auth/             # Token store
+```
+
+**Current reality:**
+```text
+lib/src/
+├── commands/         # 8 commands (339 lines)
+├── config/           # Config parser
+├── manifest/         # Manifest builder
+├── output/           # Static exporter
+├── project/          # Project inspector
+├── release/          # Release workflow (225 lines)
+├── backend/          # Backend client (88 lines, no backend)
+├── auth/             # Token store (no auth)
+├── security/         # 3 security utils
+├── models/           # Manifest models
+├── assets/           # (directory exists)
+└── environment.dart
+```
+
+**Architecture debt:**
+- Backend client built before backend exists (Phase 3 is unstarted)
+- Release workflow orchestration for workflows that don't exist yet
+- Project inspector inspecting unclear targets
+- Auth/token infrastructure with no authentication server
+- 8 command classes when 6 are simple arg parsing
+
+### What Should Happen Next
+
+**Option A: Continue forward (finish Phase 2 → start Phase 3)**
+- Accept the current CLI structure
+- Build the backend API it expects
+- Wire up release/patch workflows end-to-end
+- Validate with real self-hosting scenario
+
+**Option B: Simplify CLI first (ponytail ultra)**
+- Delete backend client until backend exists
+- Delete release workflow orchestration
+- Delete project inspector
+- Delete auth/token store
+- Collapse simple commands back into cli.dart
+- Keep only: keys, sign, manifest builder, static export
+- Ship static-hosting-first CLI (matches Phase 2 scope)
+- Add backend integration in Phase 3 when backend exists
+
+**Recommendation:**
+- You're at Phase 2 with Phase 3 infrastructure already built
+- The backend client/workflow code is speculative (no backend to call)
+- The plan says Phase 3 starts the backend
+- Current approach: build Phase 3 backend now to match the CLI
+- Lazy approach: delete Phase 3 code from CLI, ship Phase 2, then add Phase 3 properly
+
+**Ponytail ultra verdict:**
+Delete: backend/, release/, auth/, project/
+Keep: commands/, manifest/, output/, security/, models/
+Save: ~600 lines, remove 3 dependencies (http likely unused without backend)
+Ship: Static-export-focused CLI that matches Phase 2 plan
+Add back: When Phase 3 backend exists and needs the client
+
+### Minimal Viable Next Steps
+
+**If keeping current structure:**
+1. Build Phase 3 backend (NestJS + PostgreSQL + S3)
+2. Wire release/patch commands to real backend
+3. End-to-end test: CLI upload → backend storage → client download
+4. Document self-hosting with Backblaze B2
+
+**If simplifying first:**
+1. Delete unused Phase 3 infrastructure
+2. Document static export workflow
+3. Ship Phase 2 CLI as planned
+4. Start Phase 3 properly with backend
+
+**Critical path:**
+The 3-line manifest.json write in `hot_updates.dart` suggests the client expects it during install. Verify this is needed or if manifest already exists from bundle extraction.

@@ -1,0 +1,13 @@
+project_id: flutter_hot_updates
+platforms:
+  - android
+assets:
+  include:
+    - assets/**
+  exclude:
+signing:
+  private_key_path: .hot_updates/private_key.pem
+output:
+  directory: .hot_updates/build
+auth:
+  token_path: .hot_updates/token.json

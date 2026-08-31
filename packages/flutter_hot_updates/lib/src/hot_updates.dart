@@ -195,6 +195,9 @@ final class HotUpdates {
         destination: stagingDirectory,
       );
 
+      await File('${stagingDirectory.path}/manifest.json')
+          .writeAsString(manifest.toJsonString());
+
       await _storage.installJournal.updateStage(
         patch,
         InstallJournalStage.installing,
