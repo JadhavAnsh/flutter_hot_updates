@@ -4,6 +4,21 @@ String canonicalJsonEncode(Object? value) {
   return jsonEncode(_canonicalize(value));
 }
 
+/// Strips the fields that hosting may rewrite from a manifest map, leaving the
+/// payload the signature is computed over. Must stay in sync with the runtime
+/// package's copy.
+///
+/// `bundle.url` is excluded: the backend rewrites it to the object-store/CDN URL
+/// after signing. The signed `bundle.sha256` still pins the exact bytes.
+Map<String, dynamic> manifestSignaturePayload(Map<String, dynamic> manifest) {
+  final payload = Map<String, dynamic>.from(manifest)..remove('signature');
+  final bundle = payload['bundle'];
+  if (bundle is Map) {
+    payload['bundle'] = Map<String, dynamic>.from(bundle)..remove('url');
+  }
+  return payload;
+}
+
 Object? _canonicalize(Object? value) {
   if (value is Map<String, dynamic>) {
     final sortedKeys = value.keys.toList()..sort();

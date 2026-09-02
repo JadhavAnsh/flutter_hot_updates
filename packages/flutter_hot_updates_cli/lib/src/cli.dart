@@ -21,11 +21,14 @@ class HotUpdatesCli {
 
     final release = _parser.addCommand('release');
     release.addOption('platform');
+    release.addOption('app-version');
     release.addFlag('dry-run', defaultsTo: false, negatable: false);
 
     final patch = _parser.addCommand('patch');
     patch.addOption('platform');
+    patch.addOption('app-version');
     patch.addFlag('dry-run', defaultsTo: false, negatable: false);
+    patch.addFlag('backend', defaultsTo: false, negatable: false);
 
     final rollback = _parser.addCommand('rollback');
     rollback.addOption('patch');
@@ -88,12 +91,15 @@ class HotUpdatesCli {
       case 'release':
         return ReleaseCommand(env).run(
           platform: command['platform'] as String?,
+          appVersion: command['app-version'] as String?,
           dryRun: command['dry-run'] as bool,
         );
       case 'patch':
         return PatchCommand(env).run(
           platform: command['platform'] as String?,
+          appVersion: command['app-version'] as String?,
           dryRun: command['dry-run'] as bool,
+          backend: command['backend'] as bool,
         );
       case 'rollback':
         final patch = int.tryParse(command['patch'] as String? ?? '');

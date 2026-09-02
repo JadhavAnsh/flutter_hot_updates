@@ -193,8 +193,11 @@ class UpdateManifest {
   String toJsonString({bool includeSignature = true}) =>
       jsonEncode(toJson(includeSignature: includeSignature));
 
-  /// Canonical JSON payload used for signature verification (no signature field).
-  Map<String, dynamic> canonicalPayload() => toJson(includeSignature: false);
+  /// Canonical JSON payload used for signature verification (no signature
+  /// field, and no `bundle.url` — hosting rewrites it, see
+  /// [manifestSignaturePayload]).
+  Map<String, dynamic> canonicalPayload() =>
+      manifestSignaturePayload(toJson(includeSignature: false));
 
   /// Canonical JSON string used for signing and verification.
   String canonicalJsonString() => canonicalJsonEncode(canonicalPayload());

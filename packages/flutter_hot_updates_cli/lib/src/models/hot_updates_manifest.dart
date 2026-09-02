@@ -201,7 +201,8 @@ class HotUpdatesManifest {
   String toJsonString({bool includeSignature = true}) =>
       jsonEncode(toJson(includeSignature: includeSignature));
 
-  Map<String, dynamic> canonicalPayload() => toJson(includeSignature: false);
+  Map<String, dynamic> canonicalPayload() =>
+      manifestSignaturePayload(toJson(includeSignature: false));
 
   String canonicalJsonString() => canonicalJsonEncode(canonicalPayload());
 

@@ -22,11 +22,13 @@ class ManifestSigner {
   }
 
   String signManifestMap(Map<String, dynamic> manifest) {
-    final payload = Map<String, dynamic>.from(manifest)..remove('signature');
-    final canonicalPayload = canonicalJsonEncode(payload);
+    final full = Map<String, dynamic>.from(manifest)..remove('signature');
+    // bundle.url is left out of the signed payload because the backend rewrites
+    // it to the public object-store URL after this signature is produced.
+    final canonicalPayload = canonicalJsonEncode(manifestSignaturePayload(full));
     final signatureBytes = _sign(canonicalPayload);
 
-    final signedManifest = Map<String, dynamic>.from(payload)
+    final signedManifest = Map<String, dynamic>.from(full)
       ..['signature'] = base64Encode(signatureBytes);
     return canonicalJsonEncode(signedManifest);
   }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -33,7 +34,10 @@ class UpdateChecker {
     required int activePatch,
     bool allowDowngrade = false,
   }) async {
-    final manifest = await fetchManifest(manifestUrl);
+    final manifest = await fetchManifestOrNull(manifestUrl);
+    if (manifest == null) {
+      return UpdateCheckResult.none(reason: 'server reported no update');
+    }
     validateManifest(
       manifest: manifest,
       appInfo: appInfo,
@@ -58,6 +62,16 @@ class UpdateChecker {
   }
 
   Future<UpdateManifest> fetchManifest(String url) async {
+    final manifest = await fetchManifestOrNull(url);
+    if (manifest == null) {
+      throw const UpdateOperationException('no update available');
+    }
+    return manifest;
+  }
+
+  /// Like [fetchManifest] but returns null when the backend answers that no
+  /// update is available.
+  Future<UpdateManifest?> fetchManifestOrNull(String url) async {
     final String content;
     if (url.startsWith('file://')) {
       final file = File(Uri.parse(url).toFilePath());
@@ -81,7 +95,30 @@ class UpdateChecker {
       throw const UpdateOperationException('manifest response was empty');
     }
 
-    return UpdateManifest.parse(content);
+    return _parseManifestPayload(content);
+  }
+
+  /// Accepts either a bare manifest (static hosting) or the backend envelope
+  /// `{"updateAvailable": bool, "manifest": {...}}`. Returns null when the
+  /// backend reports that no update is available.
+  static UpdateManifest? _parseManifestPayload(String content) {
+    final decoded = jsonDecode(content);
+    if (decoded is! Map<String, dynamic>) {
+      throw const UpdateValidationException('manifest must be a JSON object');
+    }
+    if (!decoded.containsKey('updateAvailable')) {
+      return UpdateManifest.fromJson(decoded);
+    }
+    if (decoded['updateAvailable'] != true) {
+      return null;
+    }
+    final manifest = decoded['manifest'];
+    if (manifest is! Map) {
+      throw const UpdateValidationException(
+        'updateAvailable was true but manifest was missing',
+      );
+    }
+    return UpdateManifest.fromJson(Map<String, dynamic>.from(manifest));
   }
 
   void validateManifest({

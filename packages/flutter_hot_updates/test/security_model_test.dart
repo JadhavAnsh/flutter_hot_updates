@@ -40,6 +40,29 @@ void main() {
       );
     });
 
+    test('accepts a manifest whose bundle.url was rewritten by hosting', () {
+      final keyPair = _generateRsaKeyPair();
+      final verifier = SignatureVerifier(
+        publicKeyPem: _encodePublicKeyPem(keyPair.publicKey),
+      );
+      final manifest = _buildManifest();
+      final signature = _signManifestPayload(manifest, keyPair.privateKey);
+
+      // The backend rewrites bundle.url to the object-store URL after signing;
+      // bundle.sha256 still pins the bytes, so the signature must survive.
+      final rehosted = Map<String, dynamic>.from(manifest)
+        ..['bundle'] = {
+          ...manifest['bundle'] as Map<String, dynamic>,
+          'url': 'https://b2.example.com/demo/patch_2/bundle.zip',
+        }
+        ..['signature'] = signature;
+
+      expect(
+        () => verifier.verifyManifest(UpdateManifest.fromJson(rehosted)),
+        returnsNormally,
+      );
+    });
+
     test('rejects tampered manifests when signature is configured', () {
       final keyPair = _generateRsaKeyPair();
       final verifier = SignatureVerifier(
@@ -160,7 +183,7 @@ String _signManifestPayload(
   final signer = RSASigner(SHA256Digest(), '0609608648016503040201');
   signer.init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
 
-  final payload = Map<String, dynamic>.from(manifest)..remove('signature');
+  final payload = manifestSignaturePayload(manifest);
   final signature = signer.generateSignature(
     Uint8List.fromList(utf8.encode(canonicalJsonEncode(payload))),
   );

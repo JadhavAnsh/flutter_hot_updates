@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:yaml/yaml.dart';
+
 import 'assets/asset_collector.dart';
 import 'config/hot_updates_config.dart';
 import 'manifest/manifest_builder.dart';
@@ -47,6 +49,28 @@ class CliEnvironment {
     Uri? endpoint,
   }) {
     return HotUpdatesConfig.defaults(projectId: projectId, endpoint: endpoint);
+  }
+
+  /// Host app version taken from `pubspec.yaml` (`version: 1.2.3+45` yields
+  /// `1.2.3`, the build number is not part of the store version). Returns null
+  /// when there is no usable `version:` entry: the runtime only installs a patch
+  /// whose `appVersion` matches the running app exactly, so callers must report
+  /// that instead of guessing a value.
+  String? resolveAppVersion() {
+    final pubspec = File('${projectRoot.path}/pubspec.yaml');
+    if (!pubspec.existsSync()) {
+      return null;
+    }
+    final decoded = loadYaml(pubspec.readAsStringSync());
+    if (decoded is! YamlMap) {
+      return null;
+    }
+    final version = decoded['version'];
+    if (version == null) {
+      return null;
+    }
+    final normalized = version.toString().trim().split('+').first.trim();
+    return normalized.isEmpty ? null : normalized;
   }
 
   static Directory? _findProjectRoot(Directory dir) {

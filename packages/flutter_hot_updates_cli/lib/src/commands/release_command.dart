@@ -11,10 +11,18 @@ class ReleaseCommand {
 
   Future<int> run({
     String? platform,
+    String? appVersion,
     bool dryRun = false,
   }) async {
     final config = env.loadConfig();
     final selectedPlatform = platform ?? config.platforms.first;
+    final resolvedAppVersion = appVersion ?? env.resolveAppVersion();
+    if (resolvedAppVersion == null) {
+      stderr.writeln(
+        'could not read `version:` from pubspec.yaml, pass --app-version',
+      );
+      return 64;
+    }
 
     final assets = await env.assetCollector.collect(
       projectRoot: env.projectRoot,
@@ -39,7 +47,7 @@ class ReleaseCommand {
     final manifest = env.manifestBuilder.build(
       projectId: config.projectId,
       platform: selectedPlatform,
-      appVersion: '1.0.0',
+      appVersion: resolvedAppVersion,
       patch: 0,
       assets: assets,
       config: {},
