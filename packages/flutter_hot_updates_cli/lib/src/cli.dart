@@ -7,6 +7,7 @@ import 'commands/doctor_command.dart';
 import 'commands/init_command.dart';
 import 'commands/keys_command.dart';
 import 'commands/patch_command.dart';
+import 'commands/project_command.dart';
 import 'commands/release_command.dart';
 import 'commands/rollback_command.dart';
 import 'commands/sign_command.dart';
@@ -18,6 +19,12 @@ class HotUpdatesCli {
     init.addOption('project-id');
     init.addOption('endpoint');
     init.addFlag('force', defaultsTo: false, negatable: false);
+
+    final project = _parser.addCommand('project');
+    final projectCreate = project.addCommand('create');
+    projectCreate.addOption('slug');
+    projectCreate.addOption('name');
+    projectCreate.addOption('endpoint');
 
     final release = _parser.addCommand('release');
     release.addOption('platform');
@@ -88,6 +95,8 @@ class HotUpdatesCli {
           endpoint: _parseUri(command['endpoint'] as String?),
           force: command['force'] as bool,
         );
+      case 'project':
+        return _runProject(command);
       case 'release':
         return ReleaseCommand(env).run(
           platform: command['platform'] as String?,
@@ -120,6 +129,19 @@ class HotUpdatesCli {
     }
   }
 
+  Future<int> _runProject(ArgResults project) async {
+    final command = project.command;
+    if (command == null || command.name != 'create') {
+      _printUsage();
+      return 64;
+    }
+    return ProjectCommand().create(
+      endpoint: _parseUri(command['endpoint'] as String?),
+      slug: command['slug'] as String?,
+      name: command['name'] as String?,
+    );
+  }
+
   Future<int> _runKeys(ArgResults keys) async {
     final command = keys.command;
     if (command == null) {
@@ -146,6 +168,7 @@ class HotUpdatesCli {
     stdout.writeln('');
     stdout.writeln('Commands:');
     stdout.writeln('  init');
+    stdout.writeln('  project create');
     stdout.writeln('  release');
     stdout.writeln('  patch');
     stdout.writeln('  rollback');

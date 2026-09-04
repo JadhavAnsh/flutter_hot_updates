@@ -1,7 +1,7 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ManifestsService } from './manifests.service';
-import { RateLimitGuard } from './rate-limit.guard';
+import { RateLimitGuard } from '../common/rate-limit.guard';
 
 @ApiTags('manifests')
 @Controller('projects/:projectId')

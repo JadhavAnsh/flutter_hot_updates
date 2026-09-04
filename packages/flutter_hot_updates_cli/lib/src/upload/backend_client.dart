@@ -114,6 +114,50 @@ class BackendClient {
     }
   }
 
+  /// Creates a project via the admin endpoint (`POST /v1/projects`) using the
+  /// shared ADMIN_TOKEN. Static because there is no per-project API key yet at
+  /// creation time. Returns the new project id and its one-time API key.
+  static Future<({String id, String name, String slug, String apiKey})>
+      createProject({
+    required Uri baseUrl,
+    required String adminToken,
+    required String name,
+    required String slug,
+    http.Client? httpClient,
+  }) async {
+    final http.Client client = httpClient ?? http.Client();
+    try {
+      final base = _normalize(baseUrl);
+      final url = base.replace(
+        pathSegments: [...base.pathSegments, 'v1', 'projects']
+            .where((s) => s.isNotEmpty)
+            .toList(),
+      );
+      final res = await client.post(
+        url,
+        headers: {
+          'authorization': 'Bearer $adminToken',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode({'name': name, 'slug': slug}),
+      );
+      if (res.statusCode != 201 && res.statusCode != 200) {
+        throw Exception(
+          'create project failed (${res.statusCode}): ${res.body}',
+        );
+      }
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      return (
+        id: body['id'] as String,
+        name: body['name'] as String,
+        slug: body['slug'] as String,
+        apiKey: body['apiKey'] as String,
+      );
+    } finally {
+      if (httpClient == null) client.close();
+    }
+  }
+
   void close() => _http.close();
 
   Uri _v1(String path, [Map<String, String>? query]) {

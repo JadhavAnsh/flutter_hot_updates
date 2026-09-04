@@ -20,16 +20,20 @@ docker compose up --build
 ```
 
 This starts three services: `api` (port 3000), `db` (PostgreSQL 16), and
-`redis`. Create the schema once the DB is up:
+`redis`. Apply the schema once the DB is up:
 
 ```bash
-docker compose exec api npm run prisma:push
+docker compose exec api npm run prisma:deploy
 ```
 
-No migrations are committed yet, so `npm run prisma:deploy`
-(`prisma migrate deploy`) would apply nothing and leave the database empty.
-`prisma:push` (`prisma db push`) syncs `prisma/schema.prisma` directly. Once an
-initial migration exists, switch deploys back to `prisma:deploy`.
+`prisma:deploy` (`prisma migrate deploy`) applies the committed migrations in
+`prisma/migrations/`. If you have an existing database that was created with the
+old `prisma db push` flow, baseline it once so `deploy` treats the initial
+migration as already applied:
+
+```bash
+docker compose exec api npx prisma migrate resolve --applied 0_init
+```
 
 `db` and `redis` are published on `127.0.0.1` only — they use dev credentials
 (and Redis has no password), so do not expose them to a network.

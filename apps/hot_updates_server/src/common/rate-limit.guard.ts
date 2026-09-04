@@ -11,7 +11,8 @@ import { RedisService } from '../cache/redis.service';
 const WINDOW_SECONDS = 60;
 const MAX_REQUESTS = 100;
 
-// Fixed-window per-IP rate limit for public endpoints.
+// Fixed-window per-IP rate limit for public (unauthenticated) endpoints:
+// manifest fetch, device registration, installation reports, and events.
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   private readonly logger = new Logger(RateLimitGuard.name);

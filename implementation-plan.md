@@ -1186,113 +1186,50 @@ is planned as a later research track.
 
 This avoids overpromising while still making the project useful and credible.
 
-## 23. Current Implementation Status (as of 2026-08-31)
+## 23. Current Implementation Status (as of 2026-09-04)
 
 ### Phase Assessment
 
-**Current phase:** Early Phase 2 (CLI + Security)
+**Current phase:** Phase 3 (Backend API) — complete. Ready for Phase 4/5.
 
-**What exists:**
-- ✅ Flutter package core (`packages/flutter_hot_updates/`)
-- ✅ Manifest model and verification
-- ✅ RSA signing/verification infrastructure
-- ✅ Rollback functionality in client
-- ✅ CLI security commands (keys, sign)
-- ⚠️  CLI expanded to 2,200+ lines across 20+ files
-- ⚠️  Backend client stub (88 lines, no backend exists)
-- ⚠️  Release workflow (225 lines, unused)
-- ⚠️  Auth/token store (no auth server)
+**Phase 3 acceptance criteria (plan §9):**
 
-**What's missing from plan:**
-- Backend API (Phase 3)
-- Dashboard (Phase 5)
-- Documented self-hosting guide
-- End-to-end test with real manifest server
+| Criterion | Status | Where |
+| --- | --- | --- |
+| CLI can create a project | ✅ | `project create` → `BackendClient.createProject` → `POST /v1/projects` (admin token) |
+| CLI can upload a patch bundle to S3 | ✅ | `patch --backend`: ensureRelease → createPatch → uploadBundle (presigned PUT) → publish |
+| App fetches a manifest without admin creds | ✅ | `GET /v1/projects/:id/:platform/:appVersion/manifest.json` (public, rate-limited) |
+| Devices and installation statuses recorded | ✅ | `devices/` + `installations/` modules; a `success` install advances `device.activePatch` atomically |
+| Rollback changes the active manifest | ✅ | `PatchesService.rollback` flips the active patch and invalidates the Redis manifest cache |
+| Integration tests cover manifest selection + rollback | ✅ | `test/manifest-rollback.e2e-spec.ts`, `test/devices.e2e-spec.ts` |
 
-### Drift Analysis
+**Backend modules** (`apps/hot_updates_server/src/`): auth (API-key + admin guards),
+projects, releases, patches, manifests, devices, installations, analytics,
+storage (Backblaze B2 via S3), health, a shared rate-limit guard, and `@Global`
+Prisma/Redis modules.
 
-The CLI implementation deviated from the plan's lean approach:
+**Schema & migrations:** Prisma schema with 6 tables (projects, releases,
+patches, devices, installations, events). Initial migration committed at
+`prisma/migrations/0_init/`; apply with `npm run prisma:deploy`.
 
-**Plan expectation (Phase 2):**
-```text
-lib/src/
-├── commands/          # 6-8 command files
-├── config/           # Config parser
-├── manifest/         # Builder + signer
-├── assets/           # Collector + diff
-├── upload/           # Client + static export
-└── auth/             # Token store
-```
+**Tests:**
+- Unit (`npm test`): mocked, no infra — services for projects/releases/patches/manifests/devices/installations.
+- E2E (`npm run test:e2e`): boot the full app on an ephemeral port and hit it over `fetch`; require Postgres + Redis. See `apps/hot_updates_server/test/README.md`.
 
-**Current reality:**
-```text
-lib/src/
-├── commands/         # 8 commands (339 lines)
-├── config/           # Config parser
-├── manifest/         # Manifest builder
-├── output/           # Static exporter
-├── project/          # Project inspector
-├── release/          # Release workflow (225 lines)
-├── backend/          # Backend client (88 lines, no backend)
-├── auth/             # Token store (no auth)
-├── security/         # 3 security utils
-├── models/           # Manifest models
-├── assets/           # (directory exists)
-└── environment.dart
-```
+### Known issues / follow-ups
 
-**Architecture debt:**
-- Backend client built before backend exists (Phase 3 is unstarted)
-- Release workflow orchestration for workflows that don't exist yet
-- Project inspector inspecting unclear targets
-- Auth/token infrastructure with no authentication server
-- 8 command classes when 6 are simple arg parsing
+- **Pre-existing CLI (Phase 2) test failure:** `test/cli_commands_test.dart`
+  "release writes a signed manifest…" expects `.psd` assets excluded by default,
+  but the collector includes them (2 assets vs. expected 1). Unrelated to
+  Phase 3 — the default asset-exclude globs (or the test) need reconciling.
+- **Health path:** served at `/v1/health` (the global `v1` prefix applies), not
+  `/health` as sketched in §9.
+- E2E specs need a database + Redis; CI must run `docker compose up -d db redis`
+  and apply the schema before `npm run test:e2e`.
 
-### What Should Happen Next
+### Next phases
 
-**Option A: Continue forward (finish Phase 2 → start Phase 3)**
-- Accept the current CLI structure
-- Build the backend API it expects
-- Wire up release/patch workflows end-to-end
-- Validate with real self-hosting scenario
-
-**Option B: Simplify CLI first (ponytail ultra)**
-- Delete backend client until backend exists
-- Delete release workflow orchestration
-- Delete project inspector
-- Delete auth/token store
-- Collapse simple commands back into cli.dart
-- Keep only: keys, sign, manifest builder, static export
-- Ship static-hosting-first CLI (matches Phase 2 scope)
-- Add backend integration in Phase 3 when backend exists
-
-**Recommendation:**
-- You're at Phase 2 with Phase 3 infrastructure already built
-- The backend client/workflow code is speculative (no backend to call)
-- The plan says Phase 3 starts the backend
-- Current approach: build Phase 3 backend now to match the CLI
-- Lazy approach: delete Phase 3 code from CLI, ship Phase 2, then add Phase 3 properly
-
-**Ponytail ultra verdict:**
-Delete: backend/, release/, auth/, project/
-Keep: commands/, manifest/, output/, security/, models/
-Save: ~600 lines, remove 3 dependencies (http likely unused without backend)
-Ship: Static-export-focused CLI that matches Phase 2 plan
-Add back: When Phase 3 backend exists and needs the client
-
-### Minimal Viable Next Steps
-
-**If keeping current structure:**
-1. Build Phase 3 backend (NestJS + PostgreSQL + S3)
-2. Wire release/patch commands to real backend
-3. End-to-end test: CLI upload → backend storage → client download
-4. Document self-hosting with Backblaze B2
-
-**If simplifying first:**
-1. Delete unused Phase 3 infrastructure
-2. Document static export workflow
-3. Ship Phase 2 CLI as planned
-4. Start Phase 3 properly with backend
-
-**Critical path:**
-The 3-line manifest.json write in `hot_updates.dart` suggests the client expects it during install. Verify this is needed or if manifest already exists from bundle extraction.
+- **Phase 4 (storage):** the storage abstraction (Backblaze B2 over S3) is
+  implemented. Remaining: object retention/cleanup and delete flows.
+- **Phase 5 (dashboard):** update events are ingested (append-only); read /
+  aggregation views and the web dashboard are not started.

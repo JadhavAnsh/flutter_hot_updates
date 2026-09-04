@@ -8,6 +8,9 @@ import { ProjectsModule } from './projects/projects.module';
 import { ReleasesModule } from './releases/releases.module';
 import { PatchesModule } from './patches/patches.module';
 import { ManifestsModule } from './manifests/manifests.module';
+import { DevicesModule } from './devices/devices.module';
+import { InstallationsModule } from './installations/installations.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -23,6 +26,9 @@ import { HealthModule } from './health/health.module';
     ReleasesModule,
     PatchesModule,
     ManifestsModule,
+    DevicesModule,
+    InstallationsModule,
+    AnalyticsModule,
     HealthModule,
   ],
 })
