@@ -33,9 +33,38 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Flutter Hot Updates API')
-    .setDescription('Backend API for managing hot updates')
+    .setDescription(
+      [
+        'Backend API for publishing and serving Flutter hot updates.',
+        '',
+        '**Auth**',
+        '- `admin-token` — the `ADMIN_TOKEN`; guards project create/list/delete.',
+        '- `api-key` — a per-project key (`hu_{projectId}_{secret}`) returned once at project creation; guards releases and patches.',
+        '- Manifest and telemetry endpoints are public and rate-limited (100 req/min per IP).',
+      ].join('\n'),
+    )
     .setVersion('0.3.0')
-    .addBearerAuth()
+    // Routes are mounted under the global prefix; the spec paths omit it, so
+    // declare it as the server base or "Try it out" would hit `/projects`
+    // instead of `/v1/projects`.
+    .addServer('/v1', 'Global API prefix')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        description: 'Admin token (ADMIN_TOKEN). Guards project create/list/delete.',
+      },
+      'admin-token',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        description:
+          'Per-project API key (`hu_{projectId}_{secret}`), shown once at project creation. Guards releases and patches.',
+      },
+      'api-key',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

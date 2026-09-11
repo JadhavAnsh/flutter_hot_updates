@@ -1,14 +1,24 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { RedisService } from '../cache/redis.service';
+import {
+  OBJECT_STORAGE,
+  ObjectStorageProvider,
+} from '../storage/storage.interface';
 import { CreateReleaseDto } from './dto/create-release.dto';
 
 @Injectable()
 export class ReleasesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorageProvider,
+  ) {}
 
   async create(projectId: string, dto: CreateReleaseDto) {
     const existing = await this.prisma.release.findUnique({
@@ -44,5 +54,23 @@ export class ReleasesService {
     });
     if (!release) throw new NotFoundException('release not found');
     return release;
+  }
+
+  async remove(projectId: string, releaseId: string) {
+    const release = await this.findOneOrThrow(projectId, releaseId);
+
+    // Remove every bundle under this release before the DB rows go (Prisma
+    // onDelete: Cascade drops the patches + installations).
+    await this.storage.deletePrefix(
+      `projects/${projectId}/${release.platform}/${release.appVersion}/patches/`,
+    );
+    await this.prisma.release.delete({ where: { id: releaseId } });
+
+    // Live clients on this platform/version must stop seeing the deleted patch.
+    await this.redis
+      .del(`manifest:${projectId}:${release.platform}:${release.appVersion}`)
+      .catch(() => undefined);
+
+    return { deleted: true, releaseId };
   }
 }

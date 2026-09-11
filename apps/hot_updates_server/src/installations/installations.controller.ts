@@ -1,5 +1,5 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InstallationsService } from './installations.service';
 import { CreateInstallationDto } from './dto/create-installation.dto';
 import { RateLimitGuard } from '../common/rate-limit.guard';
@@ -13,6 +13,13 @@ export class InstallationsController {
   // report the result of an install attempt.
   @Post('installations')
   @UseGuards(RateLimitGuard)
+  @ApiOperation({
+    summary: 'Record an install attempt',
+    description:
+      'Public and rate-limited (100 req/min per IP). Reports the outcome of a patch install.',
+  })
+  @ApiResponse({ status: 201, description: 'Installation recorded.' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded (100 req/min per IP).' })
   record(
     @Param('projectId') projectId: string,
     @Body() dto: CreateInstallationDto,

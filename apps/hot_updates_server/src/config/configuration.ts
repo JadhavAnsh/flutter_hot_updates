@@ -39,6 +39,10 @@ export default () => {
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
       bucket: process.env.S3_BUCKET,
       publicBaseUrl: process.env.S3_PUBLIC_BASE_URL,
+      // Private by default: clients get short-lived presigned download URLs
+      // unless the bucket is intentionally configured for public CDN access.
+      publicAccess: process.env.S3_PUBLIC_ACCESS === 'true',
+      downloadUrlTtlSeconds: parseInt(process.env.S3_DOWNLOAD_URL_TTL, 10) || 900,
     },
   };
 };

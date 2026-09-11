@@ -3,13 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   ObjectStorageProvider,
   PutObjectInput,
   SignedUploadInput,
+  SignedDownloadInput,
 } from './storage.interface';
 
 // Backblaze B2 via its S3-compatible API. Same provider for local dev and prod;
@@ -19,6 +23,7 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
   private readonly client: S3Client;
   private readonly bucket: string;
   private readonly publicBaseUrl: string;
+  private readonly downloadUrlTtlSeconds: number;
 
   constructor(private readonly config: ConfigService) {
     const storage = this.config.get('storage');
@@ -37,6 +42,7 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
 
     this.bucket = storage.bucket;
     this.publicBaseUrl = storage.publicBaseUrl;
+    this.downloadUrlTtlSeconds = storage.downloadUrlTtlSeconds ?? 900;
     this.client = new S3Client({
       endpoint: storage.endpoint,
       region: storage.region,
@@ -71,6 +77,14 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
     );
   }
 
+  async getSignedDownloadUrl(input: SignedDownloadInput): Promise<string> {
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({ Bucket: this.bucket, Key: input.key }),
+      { expiresIn: input.expiresInSeconds ?? this.downloadUrlTtlSeconds },
+    );
+  }
+
   getPublicUrl(key: string): string {
     return `${this.publicBaseUrl.replace(/\/$/, '')}/${key}`;
   }
@@ -79,5 +93,37 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     );
+  }
+
+  async deletePrefix(prefix: string): Promise<void> {
+    // Page through every object under the prefix and delete in batches of up to
+    // 1000 (the S3 DeleteObjects limit) until the listing is exhausted.
+    let continuationToken: string | undefined;
+    do {
+      const listed = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+
+      const keys = (listed.Contents ?? [])
+        .map((object) => object.Key)
+        .filter((key): key is string => Boolean(key));
+
+      if (keys.length > 0) {
+        await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: { Objects: keys.map((Key) => ({ Key })) },
+          }),
+        );
+      }
+
+      continuationToken = listed.IsTruncated
+        ? listed.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
   }
 }

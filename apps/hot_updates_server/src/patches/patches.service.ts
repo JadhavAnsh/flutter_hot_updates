@@ -85,6 +85,7 @@ export class PatchesService {
     const patch = await this.createPatchRow(
       releaseId,
       dto,
+      key,
       bundleUrl,
       manifest,
     );
@@ -103,12 +104,25 @@ export class PatchesService {
   private async createPatchRow(
     releaseId: string,
     dto: CreatePatchDto,
+    key: string,
     bundleUrl: string,
     manifest: Record<string, any>,
   ) {
+    // Best-effort delete the abandoned pending upload's object so reusing the
+    // patch number does not leak the previous (never-published) bundle.
+    const stale = await this.prisma.patch.findMany({
+      where: { releaseId, patchNumber: dto.patchNumber, status: 'pending' },
+      select: { bundleKey: true },
+    });
     await this.prisma.patch.deleteMany({
       where: { releaseId, patchNumber: dto.patchNumber, status: 'pending' },
     });
+    await Promise.all(
+      stale
+        .map((row) => row.bundleKey)
+        .filter((k): k is string => Boolean(k))
+        .map((k) => this.storage.deleteObject(k).catch(() => undefined)),
+    );
 
     try {
       return await this.prisma.patch.create({
@@ -116,6 +130,7 @@ export class PatchesService {
           releaseId,
           patchNumber: dto.patchNumber,
           bundleUrl,
+          bundleKey: key,
           bundleSha256: dto.bundleSha256,
           bundleSizeBytes: BigInt(dto.bundleSize),
           manifestData: manifest,
@@ -172,6 +187,36 @@ export class PatchesService {
 
     await this.invalidate(projectId, release.platform, release.appVersion);
     return { status: 'active', patchId };
+  }
+
+  async remove(projectId: string, patchId: string, force = false) {
+    const patch = await this.getPatchInProject(projectId, patchId);
+
+    // Deleting the live patch silently breaks clients still checking in; require
+    // an explicit force flag to acknowledge that.
+    if (patch.status === 'active' && !force) {
+      throw new ConflictException(
+        'cannot delete the active patch without force=true',
+      );
+    }
+
+    if (patch.bundleKey) {
+      // Idempotent: a missing object is fine (upload may have never completed).
+      await this.storage.deleteObject(patch.bundleKey).catch(() => undefined);
+    }
+
+    await this.prisma.patch.delete({ where: { id: patchId } });
+
+    if (patch.status === 'active') {
+      const release = await this.prisma.release.findUnique({
+        where: { id: patch.releaseId },
+      });
+      if (release) {
+        await this.invalidate(projectId, release.platform, release.appVersion);
+      }
+    }
+
+    return { deleted: true, patchId };
   }
 
   findAll(projectId: string, releaseId: string) {

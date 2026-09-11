@@ -10,17 +10,21 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/hot_updates
       REDIS_URL: redis://redis:6379
-      S3_ENDPOINT: ${S3_ENDPOINT}
-      S3_REGION: ${S3_REGION:-us-west-000}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # Default to the bundled MinIO when host env vars are unset, so the stack
+      # runs end-to-end with no real Backblaze account.
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-minioadmin}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-minioadmin}
       S3_BUCKET: ${S3_BUCKET:-hot-updates-dev}
-      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-http://minio:9000/hot-updates-dev}
+      S3_PUBLIC_ACCESS: ${S3_PUBLIC_ACCESS:-false}
       ADMIN_TOKEN: ${ADMIN_TOKEN:-dev_admin_token}
       PORT: 3000
     depends_on:
       - db
       - redis
+      - createbuckets
     volumes:
       - ./src:/app/src
       - ./prisma:/app/prisma
@@ -46,6 +50,33 @@ services:
     ports:
       - '127.0.0.1:6379:6379'
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    # Loopback only: these dev credentials must not be reachable from the network.
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+
+  # One-shot: wait for MinIO, create the bucket, and leave it PRIVATE (no public
+  # download policy) to match the app's private-by-default presigned downloads.
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID:-minioadmin} ${S3_SECRET_ACCESS_KEY:-minioadmin}) do echo 'waiting for minio...' && sleep 1; done;
+      /usr/bin/mc mb --ignore-existing local/${S3_BUCKET:-hot-updates-dev};
+      exit 0;
+      "
+
 volumes:
   postgres_data:
   redis_data:
+  minio_data:

@@ -1,16 +1,24 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
+import {
+  OBJECT_STORAGE,
+  ObjectStorageProvider,
+} from '../storage/storage.interface';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorageProvider,
+  ) {}
 
   async create(dto: CreateProjectDto) {
     const existing = await this.prisma.project.findUnique({
@@ -50,5 +58,19 @@ export class ProjectsService {
       publicKey: project.publicKey,
       createdAt: project.createdAt,
     };
+  }
+
+  async remove(id: string) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) throw new NotFoundException('project not found');
+
+    // Drop all bundles first, then the row. The DB cascade removes releases →
+    // patches → installations, devices, and events. Manifest cache keys are per
+    // platform/version and expire within their 60s TTL, so stale entries for a
+    // now-deleted project are short-lived and harmless.
+    await this.storage.deletePrefix(`projects/${id}/`);
+    await this.prisma.project.delete({ where: { id } });
+
+    return { deleted: true, id };
   }
 }

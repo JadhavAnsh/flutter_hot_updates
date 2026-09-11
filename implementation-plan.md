@@ -1190,7 +1190,7 @@ This avoids overpromising while still making the project useful and credible.
 
 ### Phase Assessment
 
-**Current phase:** Phase 3 (Backend API) — complete. Ready for Phase 4/5.
+**Current phase:** Phase 3 (Backend API) and Phase 4 (Storage) — complete. Ready for Phase 5.
 
 **Phase 3 acceptance criteria (plan §9):**
 
@@ -1229,7 +1229,10 @@ patches, devices, installations, events). Initial migration committed at
 
 ### Next phases
 
-- **Phase 4 (storage):** the storage abstraction (Backblaze B2 over S3) is
-  implemented. Remaining: object retention/cleanup and delete flows.
+- **Phase 4 (storage): complete.** S3-compatible abstraction (Backblaze B2 /
+  MinIO) with presigned upload + download, private-by-default manifests (signed
+  GET injected per request, never cached), MinIO local-dev container with a
+  private dev bucket, and cascade/orphan cleanup on patch/release/project delete
+  and abandoned pending uploads.
 - **Phase 5 (dashboard):** update events are ingested (append-only); read /
   aggregation views and the web dashboard are not started.

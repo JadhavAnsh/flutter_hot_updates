@@ -43,6 +43,10 @@ model Patch {
   releaseId       String
   patchNumber     Int
   bundleUrl       String
+  // Object-store key of the uploaded bundle. Nullable: rows created before this
+  // column existed have none. Used to presign short-lived download URLs and to
+  // delete the object on patch/release/project removal.
+  bundleKey       String?
   bundleSha256    String
   bundleSizeBytes BigInt
   manifestData    Json
