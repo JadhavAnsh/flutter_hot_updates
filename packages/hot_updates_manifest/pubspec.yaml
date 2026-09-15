@@ -1,0 +1,9 @@
+name: hot_updates_manifest
+description: Shared manifest canonical JSON and signature payload helpers.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace

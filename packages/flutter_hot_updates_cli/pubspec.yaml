@@ -11,6 +11,8 @@ environment:
 resolution: workspace
 
 dependencies:
+  hot_updates_manifest:
+    path: ../hot_updates_manifest
   args: ^2.6.0
   archive: ^4.0.7
   asn1lib: ^1.6.5

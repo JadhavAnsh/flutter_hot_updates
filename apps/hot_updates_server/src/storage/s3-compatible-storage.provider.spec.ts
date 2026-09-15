@@ -5,7 +5,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BackblazeB2Provider } from './backblaze-b2.provider';
+import { S3CompatibleStorageProvider } from './s3-compatible-storage.provider';
 
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: jest.fn(),
@@ -22,9 +22,9 @@ const storageConfig = {
 };
 
 const buildProvider = () =>
-  new BackblazeB2Provider({ get: () => storageConfig } as any);
+  new S3CompatibleStorageProvider({ get: () => storageConfig } as any);
 
-describe('BackblazeB2Provider', () => {
+describe('S3CompatibleStorageProvider', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('getSignedDownloadUrl presigns a GetObjectCommand with the configured TTL', async () => {
@@ -49,12 +49,12 @@ describe('BackblazeB2Provider', () => {
         IsTruncated: true,
         NextContinuationToken: 'tok',
       })) as any)
-      .mockImplementationOnce((async () => ({})) as any) // first DeleteObjects
+      .mockImplementationOnce((async () => ({})) as any)
       .mockImplementationOnce((async () => ({
         Contents: [{ Key: 'p/3.zip' }],
         IsTruncated: false,
       })) as any)
-      .mockImplementationOnce((async () => ({})) as any); // second DeleteObjects
+      .mockImplementationOnce((async () => ({})) as any);
 
     await provider.deletePrefix('p/');
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../errors.dart';
-import '../security/canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 
 /// Metadata for a downloadable patch bundle.
 class BundleInfo {

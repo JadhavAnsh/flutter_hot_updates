@@ -1,12 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsInt,
   IsNotEmpty,
-  IsObject,
   IsPositive,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { ManifestV1Dto } from './manifest-v1.dto';
 
 export class CreatePatchDto {
   @ApiProperty({
@@ -21,15 +23,11 @@ export class CreatePatchDto {
   @ApiProperty({
     description:
       'Full manifest JSON built by the CLI (schema v1). Stored verbatim and served. `bundle.sha256`/`bundle.size` must match the fields below.',
-    type: 'object',
-    additionalProperties: true,
-    example: {
-      schemaVersion: 1,
-      bundle: { sha256: 'ab12…', size: 123456 },
-    },
+    type: ManifestV1Dto,
   })
-  @IsObject()
-  manifest: Record<string, any>;
+  @ValidateNested()
+  @Type(() => ManifestV1Dto)
+  manifest: ManifestV1Dto;
 
   @ApiProperty({
     description: 'SHA-256 of the bundle zip (hex). Must equal `manifest.bundle.sha256`.',

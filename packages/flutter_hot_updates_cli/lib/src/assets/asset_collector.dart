@@ -62,8 +62,41 @@ class AssetCollector {
   }
 
   bool _matches(String path, List<String> patterns) {
-    // ponytail: glob replaced with simple contains/endsWith, add glob when patterns need **
-    return patterns.any((p) => path.contains(p.replaceAll('**/', '').replaceAll('*', '')));
+    if (patterns.isEmpty) {
+      return false;
+    }
+    return patterns.any((pattern) => _globMatch(path, pattern));
+  }
+
+  bool _globMatch(String path, String pattern) {
+    final regex = RegExp('^${_globToRegex(pattern)}\$');
+    return regex.hasMatch(path);
+  }
+
+  String _globToRegex(String glob) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < glob.length; i++) {
+      final char = glob[i];
+      if (char == '*') {
+        final isDouble = i + 1 < glob.length && glob[i + 1] == '*';
+        if (isDouble) {
+          buffer.write('.*');
+          i++;
+          if (i + 1 < glob.length && glob[i + 1] == '/') {
+            i++;
+          }
+        } else {
+          buffer.write('[^/]*');
+        }
+        continue;
+      }
+      if (r'\.[]{}()+?^$|'.contains(char)) {
+        buffer.write('\\$char');
+      } else {
+        buffer.write(char);
+      }
+    }
+    return buffer.toString();
   }
 
   String _stripAssetRoot(String path) {

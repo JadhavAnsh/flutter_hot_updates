@@ -16,10 +16,9 @@ import {
   SignedDownloadInput,
 } from './storage.interface';
 
-// Backblaze B2 via its S3-compatible API. Same provider for local dev and prod;
-// only the bucket/credentials differ per environment.
+/** S3-compatible object storage (MinIO, Backblaze B2, AWS S3, etc.). */
 @Injectable()
-export class BackblazeB2Provider implements ObjectStorageProvider {
+export class S3CompatibleStorageProvider implements ObjectStorageProvider {
   private readonly client: S3Client;
   private readonly bucket: string;
   private readonly publicBaseUrl: string;
@@ -27,8 +26,6 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
 
   constructor(private readonly config: ConfigService) {
     const storage = this.config.get('storage');
-    // configuration.ts already fails boot on missing S3_* env vars; this keeps
-    // the provider from silently building an unusable client if that changes.
     const missing = [
       'endpoint',
       'accessKeyId',
@@ -96,8 +93,6 @@ export class BackblazeB2Provider implements ObjectStorageProvider {
   }
 
   async deletePrefix(prefix: string): Promise<void> {
-    // Page through every object under the prefix and delete in batches of up to
-    // 1000 (the S3 DeleteObjects limit) until the listing is exhausted.
     let continuationToken: string | undefined;
     do {
       const listed = await this.client.send(

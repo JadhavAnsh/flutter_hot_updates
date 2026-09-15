@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter_hot_updates/src/errors.dart';
 import 'package:flutter_hot_updates/src/models/update_manifest.dart';
-import 'package:flutter_hot_updates/src/security/canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 import 'package:flutter_hot_updates/src/security/checksum_verifier.dart';
 import 'package:flutter_hot_updates/src/security/signature_verifier.dart';
 import 'package:flutter_hot_updates/src/storage/storage_manager.dart';
@@ -60,6 +60,16 @@ void main() {
       expect(
         () => verifier.verifyManifest(UpdateManifest.fromJson(rehosted)),
         returnsNormally,
+      );
+    });
+
+    test('rejects manifests when no public key is configured', () {
+      final verifier = SignatureVerifier();
+      final manifest = UpdateManifest.fromJson(_buildManifest());
+
+      expect(
+        () => verifier.verifyManifest(manifest),
+        throwsA(isA<UpdateValidationException>()),
       );
     });
 

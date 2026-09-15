@@ -5,6 +5,7 @@ environment:
   sdk: ^3.12.2
 
 workspace:
+  - packages/hot_updates_manifest
   - packages/flutter_hot_updates
   - packages/flutter_hot_updates_cli
   - examples/basic_flutter_app

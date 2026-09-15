@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hot_updates/src/models/update_manifest.dart';
 import 'package:flutter_hot_updates/src/platform/app_info.dart';
+import 'package:flutter_hot_updates/testing.dart';
 import 'package:path/path.dart' as p;
 
 /// Builds a writable local manifest fixture for the example app.
@@ -69,18 +71,24 @@ Future<Directory> prepareExampleFixture() async {
   final zipFile = File(p.join(fixtureDir.path, 'patch_2.zip'));
   await zipFile.writeAsBytes(zipBytes);
 
-  final outerManifest = Map<String, dynamic>.from(innerManifest)
-    ..['bundle'] = {
+  var outerManifest = UpdateManifest.fromJson({
+    ...innerManifest,
+    'bundle': {
       'url': 'patch_2.zip',
       'sha256': sha256.convert(zipBytes).toString(),
       'size': zipBytes.length,
-    };
+    },
+  });
+  outerManifest = TestSigning.signManifest(outerManifest);
 
   await File(p.join(fixtureDir.path, 'manifest.json'))
-      .writeAsString(jsonEncode(outerManifest));
+      .writeAsString(outerManifest.toJsonString());
 
   return fixtureDir;
 }
+
+/// Public key matching [TestSigning] for the signed example fixture.
+String exampleFixturePublicKey() => TestSigning.publicKeyPem;
 
 Uint8List _buildZip(Map<String, List<int>> files) {
   final archive = Archive();

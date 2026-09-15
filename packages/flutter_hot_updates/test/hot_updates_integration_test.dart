@@ -6,6 +6,8 @@ import 'package:flutter_hot_updates/src/models/update_event.dart';
 import 'package:flutter_hot_updates/src/platform/app_info.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_hot_updates/testing.dart';
+
 import 'test_helpers.dart';
 
 void main() {
@@ -58,6 +60,7 @@ void main() {
         bundleSha256: bundle.zipSha256,
         bundleSize: bundle.zipSize,
       );
+      manifest = TestSigning.signManifest(manifest);
       await File('${tempDir.path}/manifest.json')
           .writeAsString(manifest.toJsonString());
       baseUrl = Uri.directory(tempDir.path).toString();
@@ -76,6 +79,7 @@ void main() {
       await HotUpdates.initialize(
         projectId: 'demo',
         endpoint: baseUrl,
+        publicKey: TestSigning.publicKeyPem,
         storageRootOverride: tempDir,
         appInfoOverride: AppInfo(
           appVersion: '1.0.0',

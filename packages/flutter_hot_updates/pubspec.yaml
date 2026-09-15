@@ -12,6 +12,8 @@ environment:
 resolution: workspace
 
 dependencies:
+  hot_updates_manifest:
+    path: ../hot_updates_manifest
   flutter:
     sdk: flutter
   archive: ^4.0.0

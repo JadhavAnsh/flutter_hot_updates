@@ -20,8 +20,8 @@ Pre-MVP. Not ready for production use and not published to pub.dev.
 | Rollback to previous patch | Implemented in `flutter_hot_updates` |
 | CLI key generation | Implemented in `flutter_hot_updates_cli` |
 | CLI manifest signing | Implemented in `flutter_hot_updates_cli` |
-| CLI release and patch commands | Planned for v0.3 |
-| Self-hosted backend | Planned for v0.3 |
+| CLI release and patch commands | Implemented in `flutter_hot_updates_cli` |
+| Self-hosted backend (NestJS) | Implemented in `apps/hot_updates_server` |
 | Admin dashboard | Planned for v0.5 |
 | Runtime widgets | Planned for v0.4 |
 | Flutter AOT binary patching | Research track for v2.0 |
@@ -31,6 +31,7 @@ Pre-MVP. Not ready for production use and not published to pub.dev.
 ```text
 flutter_hot_updates/
 ├── packages/
+│   ├── hot_updates_manifest/
 │   ├── flutter_hot_updates/
 │   └── flutter_hot_updates_cli/
 ├── apps/
@@ -80,6 +81,6 @@ The current Flutter scaffold has been preserved as `examples/basic_flutter_app`.
 
 ## Security Notice
 
-Pre-1.0 versions should be treated as experimental. The client package now verifies checksums and signatures, but the end-to-end release workflow is still incomplete because backend upload, rollout management, and production hardening are not implemented yet.
+Pre-1.0 versions should be treated as experimental. The client requires an embedded public key and rejects unsigned manifests. Checksums and signatures are verified before install and activation. Backend upload via the CLI is available; rollout management, the admin dashboard, and production hardening are not complete yet.
 
 `flutter_hot_updates` v0.x will update dynamic assets, configuration, and server-driven UI definitions. It will not patch compiled Dart code, native plugins, Android resources bundled in the APK, iOS binaries, or Flutter engine artifacts.

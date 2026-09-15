@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
-import 'canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 
 /// SHA256 checksum helpers.
 class ChecksumVerifier {

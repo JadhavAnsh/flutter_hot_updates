@@ -57,10 +57,15 @@ class ReleaseCommand {
     );
 
     final privateKeyFile = config.privateKeyFile(env.projectRoot);
-    final signedManifest = privateKeyFile.existsSync()
-        ? ManifestSigner(privateKeyPem: privateKeyFile.readAsStringSync())
-            .signManifestMap(manifest.toJson(includeSignature: false))
-        : manifest.toJsonString();
+    if (!privateKeyFile.existsSync()) {
+      stderr.writeln(
+        'release requires a signing key at ${config.signing.privateKeyPath}',
+      );
+      return 64;
+    }
+    final signedManifest = ManifestSigner(
+      privateKeyPem: privateKeyFile.readAsStringSync(),
+    ).signManifestMap(manifest.toJson(includeSignature: false));
 
     final result = await env.staticExporter.writeManifest(
       bundle: bundle,

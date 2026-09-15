@@ -105,4 +105,18 @@ describe('ManifestsService.getActiveManifest', () => {
     expect(r.manifest.bundle.url).toBe('https://minio/x.zip?X-Amz-Signature=abc');
     expect((r as any)._bundleKey).toBeUndefined();
   });
+
+  it('private mode fails closed when presigning fails', async () => {
+    redis.get.mockResolvedValue(null);
+    prisma.release.findUnique.mockResolvedValue({ id: 'r1' });
+    prisma.patch.findFirst.mockResolvedValue({
+      manifestData: { patch: 4, bundle: { url: 'https://cdn/pub.zip' } },
+      bundleKey: 'projects/p/android/1.0.0/patches/x.zip',
+    });
+    storage.getSignedDownloadUrl.mockRejectedValue(new Error('minio down'));
+
+    await expect(
+      build(false).getActiveManifest('p', 'android', '1.0.0'),
+    ).rejects.toThrow('bundle download URL is temporarily unavailable');
+  });
 });

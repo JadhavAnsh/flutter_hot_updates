@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
-import '../security/canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 
 class HotUpdatesBundle {
   const HotUpdatesBundle({

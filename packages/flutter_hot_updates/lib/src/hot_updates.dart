@@ -65,7 +65,7 @@ final class HotUpdates {
   static Future<void> initialize({
     required String projectId,
     required String endpoint,
-    String? publicKey,
+    required String publicKey,
     Dio? dio,
     Directory? storageRootOverride,
     AppInfo? appInfoOverride,
@@ -105,6 +105,17 @@ final class HotUpdates {
       }
 
       _assetResolver = AssetResolver(storage: _storage, state: _storage.state);
+
+      final activeManifest = _storage.activeManifest;
+      if (activeManifest != null) {
+        _updateChecker.validateManifest(
+          manifest: activeManifest,
+          appInfo: _appInfo,
+          activePatch: _storage.state?.activePatch ?? 0,
+          allowSamePatch: true,
+        );
+      }
+
       _remoteConfig.applyManifest(_storage.activeManifest);
       _initialized = true;
     });
@@ -292,6 +303,15 @@ final class HotUpdates {
     );
 
     final currentState = _storage.state!;
+    final activePatch = currentState.activePatch;
+    _updateChecker.validateManifest(
+      manifest: manifest,
+      appInfo: _appInfo,
+      activePatch: activePatch,
+      allowDowngrade: targetPatch < activePatch,
+      allowSamePatch: targetPatch == activePatch,
+    );
+    await _storage.verifyInstalledAssets(manifest, Directory(record.path));
     final previousPatch = currentState.activePatch;
     final updatedRecords = [
       for (final installed in currentState.installedPatches)

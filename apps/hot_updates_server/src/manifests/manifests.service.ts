@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { RedisService } from '../cache/redis.service';
@@ -89,9 +94,12 @@ export class ManifestsService {
         },
       };
     } catch (error) {
-      // Fail open to the stored public URL rather than break update checks.
-      this.logger.warn(`presign download url failed for ${_bundleKey}: ${error}`);
-      return response;
+      this.logger.error(
+        `presign download url failed for ${_bundleKey}: ${error}`,
+      );
+      throw new ServiceUnavailableException(
+        'bundle download URL is temporarily unavailable',
+      );
     }
   }
 

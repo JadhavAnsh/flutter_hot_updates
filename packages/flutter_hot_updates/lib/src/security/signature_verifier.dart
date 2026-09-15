@@ -6,7 +6,7 @@ import 'package:pointycastle/export.dart';
 
 import '../errors.dart';
 import '../models/update_manifest.dart';
-import 'canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 
 /// RSA signature verification hooks for manifest integrity.
 class SignatureVerifier {
@@ -19,7 +19,9 @@ class SignatureVerifier {
 
   void verifyManifest(UpdateManifest manifest) {
     if (!isConfigured) {
-      return;
+      throw const UpdateValidationException(
+        'manifest signature verification requires a configured public key',
+      );
     }
 
     final signature = manifest.signature;

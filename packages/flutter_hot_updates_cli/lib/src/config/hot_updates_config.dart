@@ -70,7 +70,7 @@ class HotUpdatesConfig {
       platforms: const ['android'],
       assets: const HotUpdatesAssetGlobs(
         include: ['assets/**'],
-        exclude: <String>[],
+        exclude: ['assets/**/*.psd'],
       ),
       signing: const HotUpdatesSigningConfig(
         privateKeyPath: '.hot_updates/private_key.pem',

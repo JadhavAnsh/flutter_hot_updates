@@ -57,6 +57,7 @@ class _HotUpdatesHomePageState extends State<HotUpdatesHomePage> {
       await HotUpdates.initialize(
         projectId: 'basic_example',
         endpoint: Uri.file(fixtureRoot.path).toString(),
+        publicKey: exampleFixturePublicKey(),
         storageRootOverride: storageRoot,
       );
 

@@ -1,12 +1,12 @@
 import { Global, Module } from '@nestjs/common';
 import { OBJECT_STORAGE } from './storage.interface';
-import { BackblazeB2Provider } from './backblaze-b2.provider';
+import { S3CompatibleStorageProvider } from './s3-compatible-storage.provider';
 
 @Global()
 @Module({
   providers: [
-    BackblazeB2Provider,
-    { provide: OBJECT_STORAGE, useExisting: BackblazeB2Provider },
+    S3CompatibleStorageProvider,
+    { provide: OBJECT_STORAGE, useExisting: S3CompatibleStorageProvider },
   ],
   exports: [OBJECT_STORAGE],
 })

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:pointycastle/export.dart';
 
-import 'canonical_json.dart';
+import 'package:hot_updates_manifest/hot_updates_manifest.dart';
 import 'rsa_pem_codec.dart';
 
 class ManifestSigner {
